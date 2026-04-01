@@ -1,0 +1,8 @@
+# requirements.txt
+fastapi
+uvicorn
+pandas
+yfinance
+numpy
+python-multipart
+jinja2

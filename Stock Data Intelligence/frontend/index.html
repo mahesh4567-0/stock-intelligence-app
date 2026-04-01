@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stock Dashboard</title>
+
+    <!--Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI';
+            background: #f5f6fa;
+        }
+
+        .layout {
+            display: flex;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 230px;
+            background: #6c5ce7;
+            color: white;
+            height: 100vh;
+            padding: 20px;
+        }
+
+        .sidebar h2 {
+            margin-bottom: 30px;
+            cursor: pointer;
+        }
+
+        .menu-item {
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .menu-item:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .active-menu {
+            background: white;
+            color: #6c5ce7;
+        }
+
+        /* Main */
+        .main {
+            flex: 1;
+            padding: 20px;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .active-page {
+            display: block;
+        }
+
+        /* Cards */
+        .cards {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            flex: 1;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        }
+
+        select, button {
+            padding: 10px;
+            margin: 10px 10px 10px 0;
+        }
+
+        button {
+            background: #6c5ce7;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .chart-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #6c5ce7;
+            color: white;
+            padding: 8px;
+        }
+
+        td {
+            padding: 6px;
+            text-align: center;
+        }
+
+        tr:nth-child(even) {
+            background: #f2f2f2;
+        }
+
+        /* Company list */
+        #companyList li {
+            cursor: pointer;
+            margin: 8px 0;
+        }
+
+        #companyList li:hover {
+            color: #6c5ce7;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="layout">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2 onclick="goHome()">📊 Stock App</h2>
+
+        <div class="menu-item active-menu" onclick="switchPage(this, 'dashboard')">Dashboard</div>
+        <div class="menu-item" onclick="switchPage(this, 'companies')">Companies</div>
+        <div class="menu-item" onclick="switchPage(this, 'compare')">Compare</div>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+
+        <!-- DASHBOARD -->
+        <div id="dashboard" class="page active-page">
+            <h2>Stock Dashboard</h2>
+
+            <div class="cards">
+                <div class="card" id="priceCard">Price: --</div>
+                <div class="card" id="highCard">52W High: --</div>
+                <div class="card" id="lowCard">52W Low: --</div>
+                <div class="card" id="avgCard">Avg Close: --</div>
+            </div>
+
+            <select id="stock1"></select>
+            <select id="stock2">
+                <option value="">Compare</option>
+            </select>
+
+            <button onclick="loadData()">Load Data</button>
+
+            <div class="chart-box">
+                <canvas id="chart"></canvas>
+            </div>
+        </div>
+
+        <!-- COMPANIES -->
+        <div id="companies" class="page">
+            <h2>Company List</h2>
+
+            <ul id="companyList"></ul>
+
+            <div class="chart-box" style="margin-top:20px;">
+                <h3 id="companyTitle">Select a company</h3>
+
+                <div style="overflow-x:auto;">
+                    <table id="companyTable">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMPARE 
+        <div id="compare" class="page">
+            <h2>Compare Stocks</h2>
+            <p>Select stocks from Dashboard to compare.</p>
+        </div>-->
+
+    </div>
+
+</div>
+
+<script>
+let chart;
+
+// Home navigation
+function goHome() {
+    window.location.href = "main.html";
+}
+
+// Page switch
+function switchPage(element, pageId) {
+    document.querySelectorAll(".menu-item").forEach(i => i.classList.remove("active-menu"));
+    element.classList.add("active-menu");
+
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active-page"));
+    document.getElementById(pageId).classList.add("active-page");
+}
+
+// Load companies
+async function loadCompanies() {
+    const res = await fetch("http://127.0.0.1:8000/companies");
+    const data = await res.json();
+
+    const list = document.getElementById("companyList");
+    const s1 = document.getElementById("stock1");
+    const s2 = document.getElementById("stock2");
+
+    data.companies.forEach(c => {
+
+        let li = document.createElement("li");
+        li.innerText = c;
+
+        li.onclick = () => loadCompanyTable(c);
+
+        list.appendChild(li);
+
+        s1.add(new Option(c, c));
+        s2.add(new Option(c, c));
+    });
+}
+
+// Load table
+async function loadCompanyTable(symbol) {
+    document.getElementById("companyTitle").innerText = symbol + " Data";
+
+    const res = await fetch(`http://127.0.0.1:8000/data/${symbol}`);
+    const data = await res.json();
+
+    const thead = document.querySelector("#companyTable thead");
+    const tbody = document.querySelector("#companyTable tbody");
+
+    thead.innerHTML = "";
+    tbody.innerHTML = "";
+
+    const cols = Object.keys(data[0]);
+
+    let headRow = "<tr>";
+    cols.forEach(c => headRow += `<th>${c}</th>`);
+    headRow += "</tr>";
+
+    thead.innerHTML = headRow;
+
+    data.slice(-50).forEach(row => {
+        let tr = "<tr>";
+        cols.forEach(c => tr += `<td>${row[c]}</td>`);
+        tr += "</tr>";
+        tbody.innerHTML += tr;
+    });
+}
+
+// Load chart
+async function loadData() {
+    const s1 = document.getElementById("stock1").value;
+    const s2 = document.getElementById("stock2").value;
+
+    const res1 = await fetch(`http://127.0.0.1:8000/data/${s1}`);
+    const data1 = await res1.json();
+
+    const labels = data1.map(d => d.Date.split(" ")[0]);
+    const price1 = data1.map(d => Number(d.Close));
+    const ma7 = data1.map(d => Number(d.MA_7));
+
+    let datasets = [
+        { label: s1 + " Price", data: price1, borderWidth: 2 },
+        { label: s1 + " MA_7", data: ma7, borderDash: [5,5], borderWidth: 2 }
+    ];
+
+    if (s2) {
+        const res2 = await fetch(`http://127.0.0.1:8000/data/${s2}`);
+        const data2 = await res2.json();
+
+        datasets.push({
+            label: s2 + " Price",
+            data: data2.map(d => Number(d.Close)),
+            borderWidth: 2
+        });
+    }
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(document.getElementById("chart"), {
+        type: "line",
+        data: { labels, datasets }
+    });
+
+    const sum = await fetch(`http://127.0.0.1:8000/summary/${s1}`);
+    const summary = await sum.json();
+
+    document.getElementById("priceCard").innerText = "Latest Price: " + price1.at(-1);
+    document.getElementById("highCard").innerText = "52W High: " + summary["52W High"];
+    document.getElementById("lowCard").innerText = "52W Low: " + summary["52W Low"];
+    document.getElementById("avgCard").innerText = "Avg Close: " + summary["Average Close"];
+}
+
+// INIT
+loadCompanies();
+</script>
+
+</body>
+</html>
