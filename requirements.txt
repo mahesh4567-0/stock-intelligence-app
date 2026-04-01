@@ -1,7 +1,0 @@
-# requirements.txt
-fastapi
-uvicorn
-pandas
-yfinance
-numpy
-
