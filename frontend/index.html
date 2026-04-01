@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stock App - Home</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI';
+            background: url('images/main-bg.jpg') no-repeat center center/cover;
+
+            color: white;
+            text-align: center;
+        }
+
+        .overlay {
+            background: rgba(0,0,0,0.6);
+            height: 100vh;
+        }
+
+        .container {
+            padding-top: 120px;
+        }
+
+        h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .btn {
+            margin-top: 30px;
+            padding: 15px 30px;
+            font-size: 18px;
+            background: white;
+            color: #6c5ce7;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn:hover {
+            transform: scale(1.08);
+        }
+
+        /* Stock cards */
+        .stock-box {
+            margin-top: 50px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.15);
+            padding: 20px;
+            border-radius: 10px;
+            width: 160px;
+            backdrop-filter: blur(5px);
+            transition: 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="overlay">
+<div class="container">
+
+    <h1>📊 Stock Intelligence App</h1>
+    <p>Track, Analyze & Compare Stocks in Real-Time</p>
+
+    <button class="btn" onclick="goToDashboard()">Enter Dashboard</button>
+
+    <!-- Live Stock Preview -->
+    <div class="stock-box">
+        <div class="card" id="infy">INFY: --</div>
+        <div class="card" id="tcs">TCS: --</div>
+        <div class="card" id="rel">RELIANCE: --</div>
+    </div>
+
+</div>
+</div>
+
+<script>
+function goToDashboard() {
+    window.location.href = "main.html";
+}
+
+//  Load live stock preview
+async function loadPreview(symbol, elementId) {
+    try {
+        const res = await fetch(`https://stock-backend.onrender.com/data/${symbol}`);
+        const data = await res.json();
+
+        if (!data || data.length === 0) return;
+
+        const latest = data[data.length - 1].Close;
+
+        document.getElementById(elementId).innerText =
+            symbol.replace(".NS","") + ": " + Number(latest).toFixed(2);
+
+    } catch (error) {
+        console.error("Error loading stock:", symbol);
+    }
+}
+
+//Load all stocks
+function loadAll() {
+    loadPreview("INFY.NS", "infy");
+    loadPreview("TCS.NS", "tcs");
+    loadPreview("RELIANCE.NS", "rel");
+}
+
+// Initial load
+loadAll();
+</script>
+
+</body>
+</html>
