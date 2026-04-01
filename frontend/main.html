@@ -99,7 +99,7 @@ function goToDashboard() {
 //  Load live stock preview
 async function loadPreview(symbol, elementId) {
     try {
-        const res = await fetch(`http://127.0.0.1:8000/data/${symbol}`);
+        const res = await fetch(`https://stock-backend.onrender.com/data/${symbol}`);
         const data = await res.json();
 
         if (!data || data.length === 0) return;
